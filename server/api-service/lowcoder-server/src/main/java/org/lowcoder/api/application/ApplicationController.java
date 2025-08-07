@@ -29,6 +29,13 @@ import static org.lowcoder.sdk.exception.BizError.INVALID_PARAMETER;
 import static org.lowcoder.sdk.util.ExceptionUtils.ofError;
 import reactor.core.publisher.Flux;
 import java.util.Map;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 @RequiredArgsConstructor
 @RestController
@@ -331,5 +338,65 @@ public class ApplicationController implements ApplicationEndpoints {
                     .zipWith(countMono)
                     .map(tuple -> PageResponseView.success(tuple.getT1(), pageNum, pageSize, Math.toIntExact(tuple.getT2())));
         });
+    }
+
+    @Override
+    @GetMapping("/{applicationId}/manifest.json")
+    public Mono<ResponseEntity<String>> getApplicationManifest(@PathVariable String applicationId) {
+        return gidService.convertApplicationIdToObjectId(applicationId).flatMap(appId ->
+            applicationApiService.getEditingApplication(appId, false)
+                .map(appView -> {
+                    Map<String, Object> dsl = appView.getApplicationDSL();
+                    Map<String, Object> settings = (Map<String, Object>) dsl.get("settings");
+                    
+                    String appTitle = settings != null ? (String) settings.get("title") : appView.getApplicationInfoView().getName();
+                    String appDescription = settings != null ? (String) settings.get("description") : "";
+                    String appIcon = settings != null ? (String) settings.get("icon") : "";
+                    
+                    // Generate manifest JSON
+                    Map<String, Object> manifest = new HashMap<>();
+                    manifest.put("name", appTitle);
+                    manifest.put("short_name", appTitle.length() > 12 ? appTitle.substring(0, 12) : appTitle);
+                    manifest.put("description", appDescription);
+                    manifest.put("start_url", "/");
+                    manifest.put("display", "standalone");
+                    manifest.put("theme_color", "#b480de");
+                    manifest.put("background_color", "#ffffff");
+                    
+                    // Generate icons array
+                    List<Map<String, Object>> icons = new ArrayList<>();
+                    if (appIcon != null && !appIcon.isEmpty()) {
+                        // Add different sizes for PWA
+                        String[] sizes = {"192x192", "512x512"};
+                        for (String size : sizes) {
+                            Map<String, Object> icon = new HashMap<>();
+                            icon.put("src", appIcon);
+                            icon.put("sizes", size);
+                            icon.put("type", "image/png");
+                            icons.add(icon);
+                        }
+                    } else {
+                        // Fallback to default Lowcoder icons
+                        Map<String, Object> icon192 = new HashMap<>();
+                        icon192.put("src", "/android-chrome-192x192.png");
+                        icon192.put("sizes", "192x192");
+                        icon192.put("type", "image/png");
+                        icons.add(icon192);
+                        
+                        Map<String, Object> icon512 = new HashMap<>();
+                        icon512.put("src", "/android-chrome-512x512.png");
+                        icon512.put("sizes", "512x512");
+                        icon512.put("type", "image/png");
+                        icons.add(icon512);
+                    }
+                    manifest.put("icons", icons);
+                    
+                    return ResponseEntity.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(new ObjectMapper().writeValueAsString(manifest));
+                })
+                .onErrorReturn(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{}"))
+            )
+            .onErrorReturn(ResponseEntity.notFound().build());
     }
 }
