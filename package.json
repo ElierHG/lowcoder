@@ -1,12 +1,18 @@
 {
-  "devDependencies": {
-    "esm": "^3.2.25",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.6.2"
-  },
-  "dependencies": {
-    "axios": "^1.7.7",
-    "fs": "^0.0.1-security",
-    "path": "^0.12.7"
-  }
+    "scripts": {
+        "start-client": "cd client && yarn start-win",
+        "start-node": "cd server/node-service && yarn dev",
+        "start-api": "cd server/api-service && cross-env LOWCODER_SUPERUSER_USERNAME=admin@localhost LOWCODER_SUPERUSER_PASSWORD=admin PF4J_MODE=development PF4J_PLUGINS_DIR=lowcoder-plugins SPRING_PROFILES_ACTIVE=lowcoder-local-dev java -XX:+AllowRedefinitionToAddDeleteMethods --add-opens java.base/java.nio=ALL-UNNAMED -cp \"lowcoder-server/target/app-libs/*;lowcoder-server/target/lowcoder-api-service.jar\" org.lowcoder.api.ServerApplication"
+    },
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "esm": "^3.2.25",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.6.2"
+    },
+    "dependencies": {
+        "axios": "^1.7.7",
+        "fs": "^0.0.1-security",
+        "path": "^0.12.7"
+    }
 }
