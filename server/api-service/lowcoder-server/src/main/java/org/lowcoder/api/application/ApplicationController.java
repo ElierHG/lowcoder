@@ -392,21 +392,22 @@ public class ApplicationController implements ApplicationEndpoints {
 
                     // Generate icons array (serve via icon endpoints that render PNGs)
                     List<Map<String, Object>> icons = new ArrayList<>();
-                    Map<String, Object> icon192 = new HashMap<>();
-                    icon192.put("src", "/api/applications/" + applicationId + "/icons/192.png");
-                    icon192.put("sizes", "192x192");
-                    icon192.put("type", "image/png");
-                    icon192.put("purpose", "any maskable");
-                    icons.add(icon192);
-
-                    Map<String, Object> icon512 = new HashMap<>();
-                    icon512.put("src", "/api/applications/" + applicationId + "/icons/512.png");
-                    icon512.put("sizes", "512x512");
-                    icon512.put("type", "image/png");
-                    icon512.put("purpose", "any maskable");
-                    icons.add(icon512);
-
+                    int[] sizes = new int[] {48, 72, 96, 120, 128, 144, 152, 167, 180, 192, 256, 384, 512};
+                    for (int s : sizes) {
+                        Map<String, Object> icon = new HashMap<>();
+                        icon.put("src", "/api/applications/" + applicationId + "/icons/" + s + ".png");
+                        icon.put("sizes", s + "x" + s);
+                        icon.put("type", "image/png");
+                        icon.put("purpose", "any maskable");
+                        icons.add(icon);
+                    }
                     manifest.put("icons", icons);
+
+                    // Optional categories for better store/system grouping
+                    List<String> categories = new ArrayList<>();
+                    categories.add("productivity");
+                    categories.add("business");
+                    manifest.put("categories", categories);
 
                     // Add shortcuts for quick actions
                     List<Map<String, Object>> shortcuts = new ArrayList<>();

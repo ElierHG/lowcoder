@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -27,7 +28,9 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Minimal per-app icon conversion and serving endpoints.
@@ -45,13 +48,18 @@ public class AppIconController {
 
     private final WebClient webClient = WebClient.builder().build();
 
+    private static final Set<Integer> ALLOWED_SIZES = new HashSet<>(
+            java.util.Arrays.asList(48, 72, 96, 128, 144, 152, 192, 256, 384, 512)
+    );
+
     @GetMapping("/{applicationId}/icons")
     public Mono<ResponseEntity<String>> listIcons(@PathVariable String applicationId) {
         // Provide a simple JSON with URLs for common sizes
         Map<String, Object> body = new HashMap<>();
         Map<String, String> icons = new HashMap<>();
-        icons.put("192", String.format("/api/applications/%s/icons/192.png", applicationId));
-        icons.put("512", String.format("/api/applications/%s/icons/512.png", applicationId));
+        for (Integer s : ALLOWED_SIZES) {
+            icons.put(String.valueOf(s), String.format("/api/applications/%s/icons/%d.png", applicationId, s));
+        }
         body.put("icons", icons);
         try {
             return Mono.just(ResponseEntity.ok()
@@ -65,11 +73,14 @@ public class AppIconController {
     @GetMapping("/{applicationId}/icons/{size}.png")
     public Mono<ResponseEntity<byte[]>> getIconPng(
             @PathVariable String applicationId,
-            @PathVariable int size
+            @PathVariable int size,
+            @RequestParam(value = "bg", required = false) String bg
     ) {
-        if (size <= 0 || (size != 192 && size != 512)) {
+        if (!ALLOWED_SIZES.contains(size)) {
             return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).build());
         }
+
+        final Color backgroundColor = parseColorOrNull(bg);
 
         return gidService.convertApplicationIdToObjectId(applicationId)
                 .flatMap(appId -> applicationRecordService.getLatestRecordByApplicationId(appId)
@@ -84,13 +95,13 @@ public class AppIconController {
                         String icon = settings != null && settings.get("icon") instanceof String
                                 ? (String) settings.get("icon")
                                 : null;
-                        return renderIconBytes(icon, size)
+                        return renderIconBytes(icon, size, backgroundColor)
                                 .onErrorResume(__ -> Mono.empty());
                     } catch (Exception ignore) {
                         return Mono.empty();
                     }
                 })
-                .switchIfEmpty(generateFallback(size))
+                .switchIfEmpty(generateFallback(size, backgroundColor))
                 .map(bytes -> {
                     HttpHeaders headers = new HttpHeaders();
                     headers.setContentType(MediaType.IMAGE_PNG);
@@ -99,14 +110,14 @@ public class AppIconController {
                 });
     }
 
-    private Mono<byte[]> renderIconBytes(String iconSource, int size) {
+    private Mono<byte[]> renderIconBytes(String iconSource, int size, Color backgroundColor) {
         if (iconSource == null || iconSource.isBlank()) {
             return Mono.empty();
         }
         // data URL
         if (iconSource.startsWith("data:")) {
             return decodeDataUrl(iconSource)
-                    .flatMap(bytes -> scaleToPng(bytes, size));
+                    .flatMap(bytes -> scaleToPng(bytes, size, backgroundColor));
         }
         // http/https URL
         try {
@@ -117,7 +128,7 @@ public class AppIconController {
                         .uri(iconSource)
                         .retrieve()
                         .bodyToMono(byte[].class)
-                        .flatMap(bytes -> scaleToPng(bytes, size))
+                        .flatMap(bytes -> scaleToPng(bytes, size, backgroundColor))
                         .onErrorResume(__ -> Mono.empty());
             }
         } catch (IllegalArgumentException ignored) {
@@ -141,7 +152,7 @@ public class AppIconController {
         }
     }
 
-    private Mono<byte[]> scaleToPng(byte[] inputBytes, int size) {
+    private Mono<byte[]> scaleToPng(byte[] inputBytes, int size, Color backgroundColor) {
         try {
             BufferedImage src = ImageIO.read(new ByteArrayInputStream(inputBytes));
             if (src == null) return Mono.empty();
@@ -152,6 +163,11 @@ public class AppIconController {
                 g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+                if (backgroundColor != null) {
+                    g2.setColor(backgroundColor);
+                    g2.fillRect(0, 0, target, target);
+                }
 
                 // cover fit while preserving aspect ratio, centered
                 double scale = Math.min((double) target / src.getWidth(), (double) target / src.getHeight());
@@ -171,7 +187,7 @@ public class AppIconController {
         }
     }
 
-    private Mono<byte[]> generateFallback(int size) {
+    private Mono<byte[]> generateFallback(int size, Color backgroundColor) {
         // Simple solid background with centered circle; brand-agnostic
         int s = size;
         BufferedImage img = new BufferedImage(s, s, BufferedImage.TYPE_INT_ARGB);
@@ -179,7 +195,7 @@ public class AppIconController {
         try {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             // background
-            g2.setColor(new Color(180, 128, 222)); // #b480de default theme
+            g2.setColor(backgroundColor != null ? backgroundColor : new Color(180, 128, 222)); // #b480de default theme
             g2.fillRect(0, 0, s, s);
             // circle
             g2.setColor(Color.WHITE);
@@ -194,6 +210,19 @@ public class AppIconController {
             return Mono.just(baos.toByteArray());
         } catch (Exception e) {
             return Mono.just(new byte[0]);
+        }
+    }
+
+    private Color parseColorOrNull(String hex) {
+        if (hex == null || hex.isBlank()) return null;
+        String value = hex.trim();
+        if (!value.startsWith("#")) {
+            value = "#" + value;
+        }
+        try {
+            return Color.decode(value);
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 }

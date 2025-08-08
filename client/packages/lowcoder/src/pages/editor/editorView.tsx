@@ -65,7 +65,7 @@ import { AppSettingContext, AppSettingType } from "@lowcoder-ee/comps/utils/appS
 import { getBrandingSetting } from "@lowcoder-ee/redux/selectors/enterpriseSelectors";
 import { getBrandingConfig } from "redux/selectors/configSelectors";
 import Flex from "antd/es/flex";
-import { getAppFavicon } from "util/iconConversionUtils";
+import { getAppFavicon, getOgImageUrl } from "util/iconConversionUtils";
 // import { BottomSkeleton } from "./bottom/BottomContent";
 
 const Header = lazy(
@@ -581,13 +581,45 @@ function EditorView(props: EditorViewProps) {
           {application && (() => {
             const appFavicon = getAppFavicon(appSettingsComp, application.applicationId);
             if (appFavicon) {
-              return <link key="app-favicon" rel="icon" href={appFavicon} />;
+              const bg = brandingSettings?.config_set?.mainBrandingColor;
+              const href = bg ? `${appFavicon}?bg=${encodeURIComponent(bg)}` : appFavicon;
+              return <link key="app-favicon" rel="icon" href={href} />;
             } else {
               // Render default favicon only when no app-specific favicon is available
               const defaultFavicon = brandingConfig?.favicon || "/src/assets/images/favicon.ico";
               return <link key="default-favicon" rel="icon" href={defaultFavicon} />;
             }
           })()}
+          {application && (() => {
+            const appIconView = appSettingsComp?.children?.icon?.getView?.();
+            const hasAppIcon = Boolean(appIconView);
+            const brandLogoUrl = brandingConfig?.logo && typeof brandingConfig.logo === 'string' ? brandingConfig.logo : undefined;
+            const brandBg = brandingSettings?.config_set?.mainBrandingColor;
+            const appleTouchIcon: string = hasAppIcon
+              ? `/api/applications/${application.applicationId}/icons/512.png${brandBg ? `?bg=${encodeURIComponent(brandBg)}` : ''}`
+              : (brandLogoUrl || "/android-chrome-512x512.png");
+            return <link key="apple-touch-icon" rel="apple-touch-icon" href={appleTouchIcon} />;
+          })()}
+          {application && (() => {
+            const appIconView = appSettingsComp?.children?.icon?.getView?.();
+            const hasAppIcon = Boolean(appIconView);
+            const brandLogoUrl = brandingConfig?.logo && typeof brandingConfig.logo === 'string' ? brandingConfig.logo : undefined;
+            const brandBg = brandingSettings?.config_set?.mainBrandingColor;
+            const startupImage: string = hasAppIcon
+              ? `/api/applications/${application.applicationId}/icons/512.png${brandBg ? `?bg=${encodeURIComponent(brandBg)}` : ''}`
+              : (brandLogoUrl || "/android-chrome-512x512.png");
+            return <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={startupImage} />;
+          })()}
+          {application && (
+            <meta
+              key="theme-color"
+              name="theme-color"
+              content={brandingSettings?.config_set?.mainBrandingColor || "#b480de"}
+            />
+          )}
+          {application && (
+            <meta key="apple-mobile-web-app-title" name="apple-mobile-web-app-title" content={appSettingsComp?.children?.title?.getView?.() || application?.name} />
+          )}
           {application && (
             <link
               key="app-manifest"
@@ -595,6 +627,13 @@ function EditorView(props: EditorViewProps) {
               href={`/api/applications/${application.applicationId}/manifest.json`}
             />
           )}
+          {application && (() => {
+            const og = getOgImageUrl(application.applicationId, brandingSettings?.config_set?.mainBrandingColor);
+            return [
+              <meta key="og:image" property="og:image" content={og} />,
+              <meta key="twitter:image" name="twitter:image" content={og} />,
+            ];
+          })()}
           <meta key="iframely:title" property="iframely:title" content={application?.name || "Lowcoder 3"} />
           <meta key="iframely:description" property="iframely:description" content={application?.description || "Lowcoder | rapid App & VideoMeeting builder for everyone."} />
           <link key="iframely" rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)" />
@@ -646,12 +685,25 @@ function EditorView(props: EditorViewProps) {
           }
         })()}
         {application && (() => {
-          // Prefer app icon URL when it is a string; otherwise fall back to brand logo or a default icon.
+          // If the app defines an icon, use the backend 512 PNG endpoint; otherwise fall back to brand logo or default.
           const appIconView = appSettingsComp?.children?.icon?.getView?.();
-          const appIconUrl = typeof appIconView === 'string' ? appIconView : undefined;
+          const hasAppIcon = Boolean(appIconView);
           const brandLogoUrl = brandingConfig?.logo && typeof brandingConfig.logo === 'string' ? brandingConfig.logo : undefined;
-          const appleTouchIcon: string = appIconUrl || brandLogoUrl || "/android-chrome-512x512.png";
+          const brandBg = brandingSettings?.config_set?.mainBrandingColor;
+          const appleTouchIcon: string = hasAppIcon
+            ? `/api/applications/${application.applicationId}/icons/512.png${brandBg ? `?bg=${encodeURIComponent(brandBg)}` : ''}`
+            : (brandLogoUrl || "/android-chrome-512x512.png");
           return <link key="apple-touch-icon" rel="apple-touch-icon" href={appleTouchIcon} />;
+        })()}
+        {application && (() => {
+          const appIconView = appSettingsComp?.children?.icon?.getView?.();
+          const hasAppIcon = Boolean(appIconView);
+          const brandLogoUrl = brandingConfig?.logo && typeof brandingConfig.logo === 'string' ? brandingConfig.logo : undefined;
+          const brandBg = brandingSettings?.config_set?.mainBrandingColor;
+          const startupImage: string = hasAppIcon
+            ? `/api/applications/${application.applicationId}/icons/512.png${brandBg ? `?bg=${encodeURIComponent(brandBg)}` : ''}`
+            : (brandLogoUrl || "/android-chrome-512x512.png");
+          return <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={startupImage} />;
         })()}
         {application && (
           <meta
@@ -670,6 +722,13 @@ function EditorView(props: EditorViewProps) {
             href={`/api/applications/${application.applicationId}/manifest.json`}
           />
         )}
+        {application && (() => {
+          const og = getOgImageUrl(application.applicationId, brandingSettings?.config_set?.mainBrandingColor);
+          return [
+            <meta key="og:image" property="og:image" content={og} />,
+            <meta key="twitter:image" name="twitter:image" content={og} />,
+          ];
+        })()}
         <meta key="iframely:title" property="iframely:title" content={application?.name || "Lowcoder 3"} />
         <meta key="iframely:description" property="iframely:description" content={application?.description || "Lowcoder | rapid App & VideoMeeting builder for everyone."} />
         <link key="iframely" rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)" />
