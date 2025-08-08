@@ -399,6 +399,7 @@ public class ApplicationController implements ApplicationEndpoints {
                             icon.put("src", appIcon);
                             icon.put("sizes", size);
                             icon.put("type", "image/png");
+                            icon.put("purpose", "any maskable");
                             icons.add(icon);
                         }
                     } else {
@@ -406,19 +407,39 @@ public class ApplicationController implements ApplicationEndpoints {
                         icon192.put("src", "/android-chrome-192x192.png");
                         icon192.put("sizes", "192x192");
                         icon192.put("type", "image/png");
+                        icon192.put("purpose", "any maskable");
                         icons.add(icon192);
 
                         Map<String, Object> icon512 = new HashMap<>();
                         icon512.put("src", "/android-chrome-512x512.png");
                         icon512.put("sizes", "512x512");
                         icon512.put("type", "image/png");
+                        icon512.put("purpose", "any maskable");
                         icons.add(icon512);
                     }
                     manifest.put("icons", icons);
 
+                    // Add shortcuts for quick actions
+                    List<Map<String, Object>> shortcuts = new ArrayList<>();
+                    // View (start) shortcut
+                    Map<String, Object> viewShortcut = new HashMap<>();
+                    viewShortcut.put("name", appTitle);
+                    viewShortcut.put("short_name", appTitle != null && appTitle.length() > 12 ? appTitle.substring(0, 12) : (appTitle == null ? "" : appTitle));
+                    viewShortcut.put("description", appDescription);
+                    viewShortcut.put("url", appStartUrl);
+                    shortcuts.add(viewShortcut);
+                    // Edit shortcut (may require auth)
+                    Map<String, Object> editShortcut = new HashMap<>();
+                    editShortcut.put("name", "Edit application");
+                    editShortcut.put("short_name", "Edit");
+                    editShortcut.put("description", "Open the application editor");
+                    editShortcut.put("url", appBasePath);
+                    shortcuts.add(editShortcut);
+                    manifest.put("shortcuts", shortcuts);
+
                     try {
                         return ResponseEntity.ok()
-                            .contentType(MediaType.APPLICATION_JSON)
+                            .contentType(MediaType.valueOf("application/manifest+json"))
                             .body(new ObjectMapper().writeValueAsString(manifest));
                     } catch (JsonProcessingException e) {
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{}");
