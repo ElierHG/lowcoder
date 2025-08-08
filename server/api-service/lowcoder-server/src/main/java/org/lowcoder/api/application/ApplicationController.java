@@ -390,33 +390,22 @@ public class ApplicationController implements ApplicationEndpoints {
                     manifest.put("theme_color", "#b480de");
                     manifest.put("background_color", "#ffffff");
 
-                    // Generate icons array
+                    // Generate icons array (serve via icon endpoints that render PNGs)
                     List<Map<String, Object>> icons = new ArrayList<>();
-                    if (appIcon != null && !appIcon.isEmpty()) {
-                        String[] sizes = {"192x192", "512x512"};
-                        for (String size : sizes) {
-                            Map<String, Object> icon = new HashMap<>();
-                            icon.put("src", appIcon);
-                            icon.put("sizes", size);
-                            icon.put("type", "image/png");
-                            icon.put("purpose", "any maskable");
-                            icons.add(icon);
-                        }
-                    } else {
-                        Map<String, Object> icon192 = new HashMap<>();
-                        icon192.put("src", "/android-chrome-192x192.png");
-                        icon192.put("sizes", "192x192");
-                        icon192.put("type", "image/png");
-                        icon192.put("purpose", "any maskable");
-                        icons.add(icon192);
+                    Map<String, Object> icon192 = new HashMap<>();
+                    icon192.put("src", "/api/applications/" + applicationId + "/icons/192.png");
+                    icon192.put("sizes", "192x192");
+                    icon192.put("type", "image/png");
+                    icon192.put("purpose", "any maskable");
+                    icons.add(icon192);
 
-                        Map<String, Object> icon512 = new HashMap<>();
-                        icon512.put("src", "/android-chrome-512x512.png");
-                        icon512.put("sizes", "512x512");
-                        icon512.put("type", "image/png");
-                        icon512.put("purpose", "any maskable");
-                        icons.add(icon512);
-                    }
+                    Map<String, Object> icon512 = new HashMap<>();
+                    icon512.put("src", "/api/applications/" + applicationId + "/icons/512.png");
+                    icon512.put("sizes", "512x512");
+                    icon512.put("type", "image/png");
+                    icon512.put("purpose", "any maskable");
+                    icons.add(icon512);
+
                     manifest.put("icons", icons);
 
                     // Add shortcuts for quick actions

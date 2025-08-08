@@ -646,9 +646,11 @@ function EditorView(props: EditorViewProps) {
           }
         })()}
         {application && (() => {
-          // Prefer app icon for Apple touch icon, fall back to brand logo if available, else to default 512
-          const appIcon = appSettingsComp?.children?.icon?.getView?.();
-          const appleTouchIcon = appIcon || (brandingConfig?.logo ? (typeof brandingConfig.logo === 'string' ? brandingConfig.logo : undefined) : undefined) || "/android-chrome-512x512.png";
+          // Prefer app icon URL when it is a string; otherwise fall back to brand logo or a default icon.
+          const appIconView = appSettingsComp?.children?.icon?.getView?.();
+          const appIconUrl = typeof appIconView === 'string' ? appIconView : undefined;
+          const brandLogoUrl = brandingConfig?.logo && typeof brandingConfig.logo === 'string' ? brandingConfig.logo : undefined;
+          const appleTouchIcon: string = appIconUrl || brandLogoUrl || "/android-chrome-512x512.png";
           return <link key="apple-touch-icon" rel="apple-touch-icon" href={appleTouchIcon} />;
         })()}
         {application && (
