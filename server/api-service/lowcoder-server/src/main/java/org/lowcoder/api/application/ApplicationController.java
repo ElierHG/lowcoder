@@ -14,6 +14,7 @@ import org.lowcoder.domain.application.model.ApplicationStatus;
 import org.lowcoder.domain.application.model.ApplicationType;
 import org.lowcoder.domain.application.service.ApplicationRecordService;
 import org.lowcoder.domain.permission.model.ResourceRole;
+import org.lowcoder.domain.application.service.ApplicationService;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,6 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -46,6 +48,7 @@ public class ApplicationController implements ApplicationEndpoints {
     private final BusinessEventPublisher businessEventPublisher;
     private final GidService gidService;
     private final ApplicationRecordService applicationRecordService;
+    private final ApplicationService applicationService;
 
     @Override
     public Mono<ResponseView<ApplicationView>> create(@RequestBody CreateApplicationRequest createApplicationRequest) {
@@ -344,29 +347,52 @@ public class ApplicationController implements ApplicationEndpoints {
     @GetMapping("/{applicationId}/manifest.json")
     public Mono<ResponseEntity<String>> getApplicationManifest(@PathVariable String applicationId) {
         return gidService.convertApplicationIdToObjectId(applicationId).flatMap(appId ->
-            applicationApiService.getEditingApplication(appId, false)
-                .map(appView -> {
-                    Map<String, Object> dsl = appView.getApplicationDSL();
-                    Map<String, Object> settings = (Map<String, Object>) dsl.get("settings");
-                    
-                    String appTitle = settings != null ? (String) settings.get("title") : appView.getApplicationInfoView().getName();
-                    String appDescription = settings != null ? (String) settings.get("description") : "";
+            // Prefer published DSL; if absent, fall back to current editing DSL directly from DB
+            applicationRecordService.getLatestRecordByApplicationId(appId)
+                .map(record -> record.getApplicationDSL())
+                .switchIfEmpty(
+                    applicationService.findById(appId)
+                        .map(app -> app.getEditingApplicationDSL())
+                )
+                .map(dsl -> {
+                    Map<String, Object> safeDsl = dsl == null ? new HashMap<>() : dsl;
+                    Map<String, Object> settings = (Map<String, Object>) safeDsl.get("settings");
+
+                    String defaultName = "Lowcoder";
+                    String appTitle = defaultName;
+                    if (settings != null) {
+                        Object titleObj = settings.get("title");
+                        if (titleObj instanceof String) {
+                            String t = (String) titleObj;
+                            if (!t.isBlank()) {
+                                appTitle = t;
+                            }
+                        }
+                    }
+                    String appDescription = settings != null && settings.get("description") instanceof String
+                            ? (String) settings.get("description")
+                            : "";
+                    if (appDescription == null) appDescription = "";
                     String appIcon = settings != null ? (String) settings.get("icon") : "";
-                    
+
                     // Generate manifest JSON
                     Map<String, Object> manifest = new HashMap<>();
                     manifest.put("name", appTitle);
-                    manifest.put("short_name", appTitle.length() > 12 ? appTitle.substring(0, 12) : appTitle);
+                    manifest.put("short_name", appTitle != null && appTitle.length() > 12 ? appTitle.substring(0, 12) : (appTitle == null ? "" : appTitle));
                     manifest.put("description", appDescription);
-                    manifest.put("start_url", "/");
+                    // PWA routing: open the installed app directly to the public view of this application
+                    String appBasePath = "/apps/" + applicationId;
+                    String appStartUrl = appBasePath + "/view";
+                    manifest.put("id", appBasePath);
+                    manifest.put("start_url", appStartUrl);
+                    manifest.put("scope", appBasePath + "/");
                     manifest.put("display", "standalone");
                     manifest.put("theme_color", "#b480de");
                     manifest.put("background_color", "#ffffff");
-                    
+
                     // Generate icons array
                     List<Map<String, Object>> icons = new ArrayList<>();
                     if (appIcon != null && !appIcon.isEmpty()) {
-                        // Add different sizes for PWA
                         String[] sizes = {"192x192", "512x512"};
                         for (String size : sizes) {
                             Map<String, Object> icon = new HashMap<>();
@@ -376,13 +402,12 @@ public class ApplicationController implements ApplicationEndpoints {
                             icons.add(icon);
                         }
                     } else {
-                        // Fallback to default Lowcoder icons
                         Map<String, Object> icon192 = new HashMap<>();
                         icon192.put("src", "/android-chrome-192x192.png");
                         icon192.put("sizes", "192x192");
                         icon192.put("type", "image/png");
                         icons.add(icon192);
-                        
+
                         Map<String, Object> icon512 = new HashMap<>();
                         icon512.put("src", "/android-chrome-512x512.png");
                         icon512.put("sizes", "512x512");
@@ -390,13 +415,16 @@ public class ApplicationController implements ApplicationEndpoints {
                         icons.add(icon512);
                     }
                     manifest.put("icons", icons);
-                    
-                    return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(new ObjectMapper().writeValueAsString(manifest));
+
+                    try {
+                        return ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(new ObjectMapper().writeValueAsString(manifest));
+                    } catch (JsonProcessingException e) {
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{}");
+                    }
                 })
-                .onErrorReturn(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{}"))
-            )
-            .onErrorReturn(ResponseEntity.notFound().build());
+                .onErrorReturn(ResponseEntity.status(HttpStatus.NOT_FOUND).body("{}"))
+        );
     }
 }
