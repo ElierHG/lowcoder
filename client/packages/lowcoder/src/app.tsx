@@ -197,7 +197,7 @@ class AppIndex extends React.Component<AppIndexProps, any> {
       <Wrapper language={this.props.uiLanguage} fontFamily={this.props.brandingFontFamily}>
         <Helmet>
           {<title>{this.props.brandName}</title>}
-          {<link rel="icon" href={this.props.favicon} />}
+          {/* Favicon is set per-route (admin vs. app) */}
           <meta name="description" content={this.props.brandDescription} />
           <meta
             name="keywords"

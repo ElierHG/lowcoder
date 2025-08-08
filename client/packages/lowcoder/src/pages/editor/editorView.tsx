@@ -565,6 +565,25 @@ function EditorView(props: EditorViewProps) {
   if (readOnly && hideHeader) {
     return (
       <CustomShortcutWrapper>
+        <Helmet>
+          {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
+          {(() => {
+            const appId = application?.applicationId;
+            const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
+            const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
+            const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+            const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+            return [
+              manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
+              appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
+              appIcon512 && <link key="apple-touch-icon" rel="apple-touch-icon" href={appIcon512} />,
+              appIcon512 && <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={appIcon512} />,
+              appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
+              appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
+              <meta key="theme-color" name="theme-color" content={themeColor} />,
+            ];
+          })()}
+        </Helmet>
         {uiComp.getView()}
         <div style={{ zIndex: Layers.hooksCompContainer }}>{hookCompViews}</div>
       </CustomShortcutWrapper>
@@ -574,25 +593,41 @@ function EditorView(props: EditorViewProps) {
   if (readOnly && !showAppSnapshot) {
     return (
       <CustomShortcutWrapper>
-        <Helmet>
-        {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
-          {isLowCoderDomain || isLocalhost && [
-            // Adding Support for iframely to be able to embedd apps as iframes
-            application?.name ? ([
-              <meta key="iframely:title" property="iframely:title" content={application.name} />,
-              <meta key="iframely:description" property="iframely:description" content={application.description} />,
-            ]) : ([
-              <meta key="iframely:title" property="iframely:title" content="Lowcoder 3" />,
-              <meta key="iframely:description" property="iframely:description" content="Lowcoder | rapid App & VideoMeeting builder for everyone." />,
-            ]),
-            <link rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)"/>,
-            <link key="preconnect-googleapis" rel="preconnect" href="https://fonts.googleapis.com" />,
-            <link key="preconnect-gstatic" rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />,
-            <link key="font-ubuntu" href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet" />,
-            // adding Hubspot Support for Analytics
-            <script key="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/144574215.js" type="text/javascript" id="hs-script-loader"></script>
-          ]}
-        </Helmet>
+                 <Helmet>
+         {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
+           {(() => {
+             const appId = application?.applicationId;
+             const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
+             const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
+             const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+             const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+             return [
+               manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
+               appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
+               appIcon512 && <link key="apple-touch-icon" rel="apple-touch-icon" href={appIcon512} />,
+               appIcon512 && <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={appIcon512} />,
+               appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
+               appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
+               <meta key="theme-color" name="theme-color" content={themeColor} />,
+             ];
+           })()}
+           {isLowCoderDomain || isLocalhost && [
+             // Adding Support for iframely to be able to embedd apps as iframes
+             application?.name ? ([
+               <meta key="iframely:title" property="iframely:title" content={application.name} />,
+               <meta key="iframely:description" property="iframely:description" content={application.description} />,
+             ]) : ([
+               <meta key="iframely:title" property="iframely:title" content="Lowcoder 3" />,
+               <meta key="iframely:description" property="iframely:description" content="Lowcoder | rapid App & VideoMeeting builder for everyone." />,
+             ]),
+             <link rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)"/>,
+             <link key="preconnect-googleapis" rel="preconnect" href="https://fonts.googleapis.com" />,
+             <link key="preconnect-gstatic" rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />,
+             <link key="font-ubuntu" href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet" />,
+             // adding Hubspot Support for Analytics
+             <script key="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/144574215.js" type="text/javascript" id="hs-script-loader"></script>
+           ]}
+         </Helmet>
         <Suspense fallback={<EditorSkeletonView />}>
           {!hideBodyHeader && <PreviewHeader />}
           <EditorContainerWithViewMode>
@@ -625,6 +660,22 @@ function EditorView(props: EditorViewProps) {
     <>
     <Helmet>
       {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
+      {(() => {
+        const appId = application?.applicationId;
+        const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
+        const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
+        const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+        const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+        return [
+          manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
+          appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
+          appIcon512 && <link key="apple-touch-icon" rel="apple-touch-icon" href={appIcon512} />,
+          appIcon512 && <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={appIcon512} />,
+          appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
+          appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
+          <meta key="theme-color" name="theme-color" content={themeColor} />,
+        ];
+      })()}
       {isLowCoderDomain || isLocalhost && [
         // Adding Support for iframely to be able to embedd apps as iframes
         application?.name ? ([
