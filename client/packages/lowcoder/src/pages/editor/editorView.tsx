@@ -64,6 +64,7 @@ import { isEqual, noop } from "lodash";
 import { AppSettingContext, AppSettingType } from "@lowcoder-ee/comps/utils/appSettingContext";
 import { getBrandingSetting } from "@lowcoder-ee/redux/selectors/enterpriseSelectors";
 import Flex from "antd/es/flex";
+import { getAppIconPngUrl } from "util/iconConversionUtils";
 // import { BottomSkeleton } from "./bottom/BottomContent";
 
 const Header = lazy(
@@ -568,10 +569,11 @@ function EditorView(props: EditorViewProps) {
           {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
           {(() => {
             const appId = application?.applicationId;
-            const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
-            const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
-            const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
             const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+            const appIcon512 = appId ? getAppIconPngUrl(appId, 512, themeColor) : undefined;
+            const appIcon192 = appId ? getAppIconPngUrl(appId, 192, themeColor) : undefined;
+            const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+            const appTitle = appSettingsComp?.children?.title?.getView?.() || application?.name;
             return [
               manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
               appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
@@ -580,6 +582,7 @@ function EditorView(props: EditorViewProps) {
               appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
               appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
               <meta key="theme-color" name="theme-color" content={themeColor} />,
+              appTitle && <meta key="apple-mobile-web-app-title" name="apple-mobile-web-app-title" content={String(appTitle)} />,
             ];
           })()}
         </Helmet>
@@ -596,10 +599,11 @@ function EditorView(props: EditorViewProps) {
           {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
           {(() => {
             const appId = application?.applicationId;
-            const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
-            const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
-            const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
             const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+            const appIcon512 = appId ? getAppIconPngUrl(appId, 512, themeColor) : undefined;
+            const appIcon192 = appId ? getAppIconPngUrl(appId, 192, themeColor) : undefined;
+            const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+            const appTitle = appSettingsComp?.children?.title?.getView?.() || application?.name;
             return [
               manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
               appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
@@ -608,6 +612,7 @@ function EditorView(props: EditorViewProps) {
               appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
               appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
               <meta key="theme-color" name="theme-color" content={themeColor} />,
+              appTitle && <meta key="apple-mobile-web-app-title" name="apple-mobile-web-app-title" content={String(appTitle)} />,
             ];
           })()}
           {isLowCoderDomain || isLocalhost && [
@@ -661,10 +666,11 @@ function EditorView(props: EditorViewProps) {
         {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
         {(() => {
           const appId = application?.applicationId;
-          const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
-          const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
-          const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
           const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+          const appIcon512 = appId ? getAppIconPngUrl(appId, 512, themeColor) : undefined;
+          const appIcon192 = appId ? getAppIconPngUrl(appId, 192, themeColor) : undefined;
+          const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+          const appTitle = appSettingsComp?.children?.title?.getView?.() || application?.name;
           return [
             manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
             appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
@@ -673,6 +679,7 @@ function EditorView(props: EditorViewProps) {
             appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
             appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
             <meta key="theme-color" name="theme-color" content={themeColor} />,
+            appTitle && <meta key="apple-mobile-web-app-title" name="apple-mobile-web-app-title" content={String(appTitle)} />,
           ];
         })()}
         {isLowCoderDomain || isLocalhost && [

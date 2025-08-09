@@ -81,68 +81,7 @@ public class AppIconController {
                 .then();
     }
 
-    @GetMapping(value = "/{applicationId}/manifest.json")
-    public Mono<String> getManifest(@PathVariable String applicationId, ServerHttpResponse response) {
-        response.getHeaders().setContentType(MediaType.valueOf("application/manifest+json"));
-        response.getHeaders().setCacheControl(CacheControl.maxAge(Duration.ofHours(1)).cachePublic());
-        String appScope = "/apps/" + applicationId + "/";
-        String startUrl = "/apps/" + applicationId + "/view";
-        Map<String, Object> manifest = new LinkedHashMap<>();
-        // Basic
-        manifest.put("id", "/apps/" + applicationId);
-        manifest.put("scope", appScope);
-        manifest.put("start_url", startUrl);
-        manifest.put("display", "standalone");
-        manifest.put("background_color", "#ffffff");
-        manifest.put("theme_color", "#b480de");
-
-        // Fill name/description from application if available
-        return applicationService.findById(applicationId)
-                .flatMap(app -> Mono.zip(
-                        Mono.justOrEmpty(app.getTitle(applicationRecordService)).defaultIfEmpty(""),
-                        Mono.justOrEmpty(app.getDescription(applicationRecordService)).defaultIfEmpty("")))
-                .defaultIfEmpty(new AbstractMap.SimpleEntry<>("", ""))
-                .map(tuple -> {
-                    String name = tuple instanceof Map.Entry ? ((Map.Entry<String, String>) tuple).getKey() : "";
-                    String description = tuple instanceof Map.Entry ? ((Map.Entry<String, String>) tuple).getValue() : "";
-                    if (!(tuple instanceof Map.Entry)) {
-                        Object[] arr = (Object[]) tuple;
-                        name = Objects.toString(arr[0], "");
-                        description = Objects.toString(arr[1], "");
-                    }
-                    if (name == null || name.isBlank()) name = "Lowcoder App";
-                    manifest.put("name", name);
-                    manifest.put("short_name", name);
-                    if (description != null && !description.isBlank()) {
-                        manifest.put("description", description);
-                    }
-
-                    List<Map<String, Object>> icons = new ArrayList<>();
-                    for (Integer s : List.of(192, 512)) {
-                        Map<String, Object> icon = new LinkedHashMap<>();
-                        icon.put("src", String.format("/api/applications/%s/icons/%d.png", applicationId, s));
-                        icon.put("sizes", s + "x" + s);
-                        icon.put("type", "image/png");
-                        icon.put("purpose", "any maskable");
-                        icons.add(icon);
-                    }
-                    manifest.put("icons", icons);
-
-                    // Shortcuts
-                    List<Map<String, Object>> shortcuts = new ArrayList<>();
-                    Map<String, Object> viewShortcut = new LinkedHashMap<>();
-                    viewShortcut.put("name", name);
-                    viewShortcut.put("url", startUrl);
-                    shortcuts.add(viewShortcut);
-                    Map<String, Object> editShortcut = new LinkedHashMap<>();
-                    editShortcut.put("name", name + " (Edit)");
-                    editShortcut.put("url", "/apps/" + applicationId + "/edit");
-                    shortcuts.add(editShortcut);
-                    manifest.put("shortcuts", shortcuts);
-
-                    return toJson(manifest);
-                });
-    }
+    // Manifest endpoint is provided by ApplicationController; do not duplicate here.
 
     private static byte[] buildIconPng(String iconIdentifier, String appName, int size, @Nullable Color bgColor) throws Exception {
         BufferedImage source = tryLoadImage(iconIdentifier);

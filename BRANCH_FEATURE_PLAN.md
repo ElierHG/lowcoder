@@ -24,7 +24,7 @@ This plan outlines the implementation of favicon and PWA icon functionality for 
     - `<link rel="apple-touch-icon" href="/api/applications/{appId}/icons/512.png">`
     - No global default favicon is injected on app routes.
 2. **Admin Routes Favicon**: Set in `client/packages/lowcoder/src/pages/ApplicationV2/index.tsx` to a scoped default favicon so it does not interfere with per‑app favicons.
-3. **Per‑App PWA Manifest**: Served dynamically by backend at `GET /api/applications/{appId}/manifest.json` and injected via `<link rel="manifest">` in `editorView.tsx`.
+3. **Per‑App PWA Manifest**: Served dynamically by backend at `GET /api/applications/{appId}/manifest.json` and injected via `<link rel="manifest">` in `editorView.tsx`. Note: The endpoint is consolidated in `ApplicationController`.
 4. **Static Manifest (legacy)**: `client/packages/lowcoder/site.webmanifest` remains in the repo but is not linked on app routes.
 
 ## Implementation Progress
@@ -151,7 +151,7 @@ const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de'
 
 #### What Has Been Implemented
 
--   **✅ Backend per‑app manifest endpoint**: `GET /api/applications/{appId}/manifest.json` in `ApplicationController` generates a manifest dynamically from the app DSL (`settings.title`, `settings.description`, `settings.icon`) with sensible fallbacks and default icons.
+-   **✅ Backend per‑app manifest endpoint**: `GET /api/applications/{appId}/manifest.json` in `ApplicationController` generates a manifest dynamically from the app DSL (`settings.title`, `settings.description`, `settings.icon`) with sensible fallbacks and default icons. The duplicate in `AppIconController` has been removed.
 -   **✅ Security**: Public GET access for the manifest path is permitted in `SecurityConfig` (no auth required), including new‑URL aliases.
 -   **✅ Frontend injection**: `editorView.tsx` adds `<link rel="manifest">` for app routes, so browsers automatically fetch the per‑app manifest. Admin routes don't include it.
 -   **✅ Verification**: Manual checks confirm a single manifest link on app pages and `200 application/manifest+json` served by the endpoint with no 401/404s.
@@ -172,7 +172,6 @@ const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de'
     -   `apple-touch-startup-image` → same as above
     -   `og:image` / `twitter:image` → per‑app 512 PNG
     -   `theme-color` using `brandingSettings?.config_set?.mainBrandingColor` with `#b480de` fallback
-    -   `apple-mobile-web-app-title` using app title
 
 #### Technical Implementation Details:
 
@@ -348,3 +347,10 @@ The implementation is modular and can be developed incrementally. Phase 1 provid
 
 -   Client build: PASS (`yarn build`)
 -   Server build: Maven not available in this environment; validate in CI with Java-enabled environment.
+
+## Known gaps vs code (updated)
+
+-   Per-app `apple-mobile-web-app-title` is injected in `client/packages/lowcoder/src/pages/editor/editorView.tsx`.
+-   Icon URLs in `editorView.tsx` use `getAppIconPngUrl(appId, size, brandingColor)` to include optional brand-aware backgrounds.
+-   Manifest endpoint is now single-source in `ApplicationController`.
+-   Frontend continues to build manifest link inline (OK); favicon/touch icon URLs use utilities.
