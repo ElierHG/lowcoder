@@ -1,0 +1,13 @@
+org/example/environments/endpoints/EnvironmentsEndpoints.class
+org/example/environments/util/Responses.class
+org/example/environments/endpoints/LicenseEndpoints.class
+org/example/environments/service/StorageService$2.class
+org/example/environments/model/ManagedObject.class
+org/example/environments/util/Responses$SimpleResponse.class
+org/example/environments/service/StorageService$1.class
+org/example/environments/model/ManagedObject$ManagedObjectBuilder.class
+org/example/environments/model/Environment$EnvironmentBuilder.class
+org/example/environments/service/StorageService.class
+org/example/environments/EnvironmentsPlugin.class
+org/example/environments/endpoints/ManagedObjectEndpoints.class
+org/example/environments/model/Environment.class

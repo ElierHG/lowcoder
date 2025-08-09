@@ -1,0 +1,8 @@
+/workspace/environments-plugin/src/main/java/org/example/environments/util/Responses.java
+/workspace/environments-plugin/src/main/java/org/example/environments/endpoints/EnvironmentsEndpoints.java
+/workspace/environments-plugin/src/main/java/org/example/environments/endpoints/ManagedObjectEndpoints.java
+/workspace/environments-plugin/src/main/java/org/example/environments/model/Environment.java
+/workspace/environments-plugin/src/main/java/org/example/environments/endpoints/LicenseEndpoints.java
+/workspace/environments-plugin/src/main/java/org/example/environments/EnvironmentsPlugin.java
+/workspace/environments-plugin/src/main/java/org/example/environments/service/StorageService.java
+/workspace/environments-plugin/src/main/java/org/example/environments/model/ManagedObject.java
