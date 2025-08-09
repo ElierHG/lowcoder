@@ -22,3 +22,6 @@ node_modules
 
 # Local Netlify folder
 .netlify
+
+# local dev files
+BRANCH_FEATURE_PLAN.md
