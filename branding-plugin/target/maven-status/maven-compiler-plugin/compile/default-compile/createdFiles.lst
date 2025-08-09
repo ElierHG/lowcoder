@@ -1,0 +1,6 @@
+org/example/branding/util/Responses.class
+org/example/branding/util/Responses$SimpleEndpointResponse.class
+org/example/branding/dto/BrandingConfig$BrandingConfigBuilder.class
+org/example/branding/dto/BrandingConfig.class
+org/example/branding/BrandingPlugin.class
+org/example/branding/BrandingEndpoints.class
