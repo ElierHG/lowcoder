@@ -18,7 +18,11 @@ This plan outlines the implementation of favicon and PWA icon functionality for 
 
 ### Current Favicon/PWA Setup (as of HEAD)
 
-1. **Per‑App Favicon (Editor/App routes)**: Set in `client/packages/lowcoder/src/pages/editor/editorView.tsx` using React Helmet. Uses app icon when available; otherwise falls back to branding favicon or default `/src/assets/images/favicon.ico`.
+1. **Per‑App Favicon (Editor/App routes)**: Set in `client/packages/lowcoder/src/pages/editor/editorView.tsx` using React Helmet. The editor view directly injects per‑app links based on `applicationId`:
+    - `<link rel="manifest" href="/api/applications/{appId}/manifest.json">`
+    - `<link rel="icon" href="/api/applications/{appId}/icons/192.png">`
+    - `<link rel="apple-touch-icon" href="/api/applications/{appId}/icons/512.png">`
+    - No global default favicon is injected on app routes.
 2. **Admin Routes Favicon**: Set in `client/packages/lowcoder/src/pages/ApplicationV2/index.tsx` to a scoped default favicon so it does not interfere with per‑app favicons.
 3. **Per‑App PWA Manifest**: Served dynamically by backend at `GET /api/applications/{appId}/manifest.json` and injected via `<link rel="manifest">` in `editorView.tsx`.
 4. **Static Manifest (legacy)**: `client/packages/lowcoder/site.webmanifest` remains in the repo but is not linked on app routes.
@@ -41,9 +45,13 @@ This plan outlines the implementation of favicon and PWA icon functionality for 
 
 2. **✅ Updated Editor View** (`client/packages/lowcoder/src/pages/editor/editorView.tsx`):
 
-    - Added app-specific favicon to both read-only and full editor views
-    - Conditional rendering: app-specific favicon when available, default favicon as fallback
-    - Proper Redux integration for branding config access
+    - Injects per‑app links/meta directly using `applicationId`:
+        - `rel="manifest"` → `/api/applications/{appId}/manifest.json`
+        - `rel="icon"` → `/api/applications/{appId}/icons/192.png`
+        - `rel="apple-touch-icon"` and `apple-touch-startup-image` → `/api/applications/{appId}/icons/512.png`
+        - `og:image` / `twitter:image` → per‑app 512 PNG
+        - `theme-color` from branding settings with `#b480de` fallback
+    - Currently constructs URLs inline rather than using `iconConversionUtils`.
     - Clean implementation without console errors
 
 3. **✅ Modified Global App Configuration** (`client/packages/lowcoder/src/app.tsx`):
@@ -51,11 +59,9 @@ This plan outlines the implementation of favicon and PWA icon functionality for 
     - Removed default favicon from global Helmet
     - Added comment indicating favicon is handled conditionally in editorView.tsx
 
-4. **✅ Fixed Icon Parsing** (`client/packages/lowcoder/src/comps/comps/multiIconDisplay.tsx`):
+4. **✅ Icon Parsing** (`client/packages/lowcoder/src/comps/comps/multiIconDisplay.tsx`):
 
-    - Added proper export for `parseIconIdentifier` function
-    - Added type checking to prevent errors with non-string identifiers
-    - Fixed React import issues
+    - Exposes `parseIconIdentifier` used by utilities. Note: editor favicon injection does not depend on this.
 
 5. **✅ Error Resolution**:
 
@@ -65,44 +71,36 @@ This plan outlines the implementation of favicon and PWA icon functionality for 
 
 6. **✅ Admin Routes Default Favicon** (`client/packages/lowcoder/src/pages/ApplicationV2/index.tsx`):
 
-    - Added a scoped default favicon for admin routes (e.g., `/apps`, `/datasource`, `/setting`)
-    - Uses `brandingConfig?.favicon` when available, otherwise falls back to `/src/assets/images/favicon.ico`
-    - Placed only within admin layout so it does not precede or override per‑app favicons on app routes
-    - Observes favicon precedence: the first `<link rel='icon'>` in the document is chosen by browsers
+    - Adds a scoped default favicon for admin routes (e.g., `/apps`, `/datasource`, `/setting`).
+    - Uses `branding?.favicon` (via `buildMaterialPreviewURL`) when available; otherwise falls back to the imported default `favicon` asset from `assets/images`.
+    - Placed only within admin layout so it does not precede or override per‑app favicons on app routes.
+    - Observes favicon precedence: the first `<link rel='icon'>` in the document is chosen by browsers.
 
 #### Technical Implementation Details:
 
-```typescript
-// Icon extraction from React elements
-if (iconIdentifier.$$typeof === Symbol.for('react.element')) {
-    if (iconIdentifier.props && iconIdentifier.props.value) {
-        iconString = iconIdentifier.props.value
-    }
-}
+```tsx
+// Route-level meta in editor view (simplified)
+const appId = application?.applicationId
+const appIcon512 = appId
+    ? `/api/applications/${appId}/icons/512.png`
+    : undefined
+const appIcon192 = appId
+    ? `/api/applications/${appId}/icons/192.png`
+    : undefined
+const manifestHref = appId
+    ? `/api/applications/${appId}/manifest.json`
+    : undefined
+const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de'
 
-// Conditional favicon rendering
-{
-    application &&
-        (() => {
-            const appFavicon = getAppFavicon(
-                appSettingsComp,
-                application.applicationId
-            )
-            if (appFavicon) {
-                return <link key='app-favicon' rel='icon' href={appFavicon} />
-            } else {
-                const defaultFavicon =
-                    brandingConfig?.favicon || '/src/assets/images/favicon.ico'
-                return (
-                    <link
-                        key='default-favicon'
-                        rel='icon'
-                        href={defaultFavicon}
-                    />
-                )
-            }
-        })()
-}
+;<Helmet>
+    {manifestHref && <link rel='manifest' href={manifestHref} />}
+    {appIcon192 && <link rel='icon' href={appIcon192} />}
+    {appIcon512 && <link rel='apple-touch-icon' href={appIcon512} />}
+    {appIcon512 && <link rel='apple-touch-startup-image' href={appIcon512} />}
+    {appIcon512 && <meta property='og:image' content={appIcon512} />}
+    {appIcon512 && <meta name='twitter:image' content={appIcon512} />}
+    <meta name='theme-color' content={themeColor} />
+</Helmet>
 ```
 
 #### Current Behavior:
@@ -214,18 +212,18 @@ const appleTouchIcon =
 />
 ```
 
-### ✅ Phase 4: Advanced PWA Features (COMPLETED)
+### 🔄 Phase 4: Advanced PWA Features (PARTIALLY COMPLETED)
 
-**Status**: ✅ **COMPLETED** — Advanced PWA and icon optimization features
+**Status**: 🔄 **PARTIALLY COMPLETED** — Advanced PWA and icon optimization features
 
 #### Planned Implementation:
 
 1. **Dynamic Icon Generation**
 
--   ✅ Multiple icon sizes generated on-demand via `GET /icons/{size}.png` (48, 72, 96, 120, 128, 144, 152, 167, 180, 192, 256, 384, 512)
--   ✅ Optional background color supported via `?bg=#RRGGBB`
--   ✅ In-memory caching of generated PNGs (12h TTL, up to 2000 entries)
--   🔄 Future: support SVG/WebP output and persistent cache store
+    - ✅ Multiple icon sizes generated on-demand via `GET /icons/{size}.png` (48, 72, 96, 120, 128, 144, 152, 167, 180, 192, 256, 384, 512)
+    - ✅ Optional background color supported via `?bg=#RRGGBB`
+    - ✅ HTTP caching via `Cache-Control` headers (7 days)
+    - 🔄 Future: in-memory caching of generated PNGs; support SVG/WebP output; persistent cache store
 
 ## Technical Implementation Details
 
@@ -233,18 +231,10 @@ const appleTouchIcon =
 
 1. **New API Endpoints**:
 
-    ```java
-    // Convert app icon to favicon
-    POST /api/applications/{appId}/favicon
-
-    // Generate app-specific manifest
-    GET /api/applications/{appId}/manifest.json
-
-    // Get converted icon URLs
-    GET /api/applications/{appId}/icons (DONE)
-    ```
-
-Note: `GET /api/applications/{appId}/manifest.json` is already implemented in `ApplicationController` and permitted in `SecurityConfig`.
+    - Already implemented for this feature set:
+        - `GET /api/applications/{appId}/manifest.json` (in `ApplicationController`)
+        - `GET /api/applications/{appId}/icons` and `GET /api/applications/{appId}/icons/{size}.png[?bg=#RRGGBB]` (in `AppIconController`)
+    - No additional endpoints are required at this time.
 
 2. **Icon Conversion Service**:
     - Use libraries like ImageMagick or Java ImageIO
@@ -256,34 +246,11 @@ Note: `GET /api/applications/{appId}/manifest.json` is already implemented in `A
 
 1. **✅ Updated `editorView.tsx`**:
 
-    ```typescript
-    // Add app-specific favicon to Helmet
-    {
-        application &&
-            (() => {
-                const appFavicon = getAppFavicon(
-                    appSettingsComp,
-                    application.applicationId
-                )
-                if (appFavicon) {
-                    return (
-                        <link key='app-favicon' rel='icon' href={appFavicon} />
-                    )
-                } else {
-                    const defaultFavicon =
-                        brandingConfig?.favicon ||
-                        '/src/assets/images/favicon.ico'
-                    return (
-                        <link
-                            key='default-favicon'
-                            rel='icon'
-                            href={defaultFavicon}
-                        />
-                    )
-                }
-            })()
-    }
-    ```
+    - Injects per‑app URLs directly (does not use `getAppFavicon`):
+        - `rel="manifest"` → `/api/applications/{appId}/manifest.json`
+        - `rel="icon"` → `/api/applications/{appId}/icons/192.png`
+        - `rel="apple-touch-icon"` and `apple-touch-startup-image` → `/api/applications/{appId}/icons/512.png`
+        - `og:image` / `twitter:image` → per‑app 512 PNG
 
 2. **✅ Created Icon Conversion Utilities**:
 
@@ -304,19 +271,7 @@ Note: `GET /api/applications/{appId}/manifest.json` is already implemented in `A
 
 3. **✅ Updated `ApplicationV2/index.tsx`** (Admin routes default favicon):
 
-    ```tsx
-    <Helmet>
-        <link
-            key='default-favicon'
-            rel='icon'
-            href={
-                brandingConfig?.favicon
-                    ? buildMaterialPreviewURL(brandingConfig.favicon)
-                    : '/src/assets/images/favicon.ico'
-            }
-        />
-    </Helmet>
-    ```
+    - Uses `branding?.favicon` (via `buildMaterialPreviewURL`) with fallback to the imported `favicon` asset.
 
 ### Database Schema Updates (Future)
 
@@ -352,7 +307,7 @@ Note: `GET /api/applications/{appId}/manifest.json` is already implemented in `A
 -   `client/packages/lowcoder/src/comps/comps/multiIconDisplay.tsx` ✅
 -   `client/packages/lowcoder/src/pages/ApplicationV2/index.tsx` ✅
 -   `server/api-service/lowcoder-server/src/main/java/org/lowcoder/api/application/ApplicationController.java` ✅
--   `server/api-service/lowcoder-server/src/main/java/org/lowcoder/api/framework/security/SecurityConfig.java` ✅
+-   `server/api-service/lowcoder-server/src/main/java/org/lowcoder/api/framework/security/SecurityConfig.java` ✅ (permits public GET for manifest and icons on both legacy and new URL bases)
 
 ### 🔄 Files to Create (Future)
 
@@ -381,7 +336,7 @@ Note: `GET /api/applications/{appId}/manifest.json` is already implemented in `A
 -   **✅ Phase 1**: COMPLETED — Basic app‑specific favicon functionality is working
 -   **✅ Phase 2 (MVP)**: COMPLETED — Backend icon endpoints serve PNGs with graceful fallback; security updated; manifest points to endpoints
 -   **✅ Phase 3**: COMPLETED — Enhanced PWA manifest with maskable icons, shortcuts, categories, proper content type, and app-specific meta tags
--   **✅ Phase 4**: COMPLETED — Multi-size icon endpoints, brand-aware background color, per‑app OG/Twitter images, in‑memory caching. Remaining stretch goals (SVG/WebP, persistent cache, font‑icon rendering, custom install prompts) are tracked as future enhancements.
+-   **🔄 Phase 4**: PARTIALLY COMPLETED — Multi-size icon endpoints, brand-aware background color, per‑app OG/Twitter images, HTTP cache headers are in place. In‑memory icon caching and other stretch goals (SVG/WebP, persistent cache, font‑icon rendering, custom install prompts) remain future enhancements.
 
 The implementation is modular and can be developed incrementally. Phase 1 provided immediate value with app-specific favicons, and Phase 3 added comprehensive PWA support. Phase 2 (MVP) delivered per‑app PNG endpoints with cache headers and graceful fallback; later updates added multi-size support and optional background color. Phase 4 progresses advanced features; remaining items are tracked above.
 
