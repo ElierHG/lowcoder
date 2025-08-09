@@ -1,4 +1,4 @@
-import { parseIconIdentifier } from 'comps/comps/multiIconDisplay'
+import { parseIconIdentifier } from '@lowcoder-ee/comps/comps/multiIconDisplay'
 
 /**
  * Utility functions for handling app-specific favicon and icon conversion

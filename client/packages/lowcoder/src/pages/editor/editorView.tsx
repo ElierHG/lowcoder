@@ -1,6 +1,6 @@
 import { default as Divider } from "antd/es/divider";
 import { default as Menu } from "antd/es/menu";
-import { default as Sider} from "antd/es/layout/Sider";
+import { default as Sider } from "antd/es/layout/Sider";
 import { PreloadComp } from "comps/comps/preLoadComp";
 import UIComp from "comps/comps/uiComp";
 import { EditorContext } from "comps/editorState";
@@ -67,69 +67,69 @@ import Flex from "antd/es/flex";
 // import { BottomSkeleton } from "./bottom/BottomContent";
 
 const Header = lazy(
-    () => import("pages/common/header")
-        .then(module => ({default: module.default}))
+  () => import("pages/common/header")
+    .then(module => ({ default: module.default }))
 );
 
 const BottomSkeleton = lazy(
-    () => import("pages/editor/bottom/BottomContent")
-        .then(module => ({default: module.BottomSkeleton}))
+  () => import("pages/editor/bottom/BottomContent")
+    .then(module => ({ default: module.BottomSkeleton }))
 );
 
 const LeftContent = lazy(
   () => import('./LeftContent')
-    .then(module => ({default: module.LeftContent}))
+    .then(module => ({ default: module.LeftContent }))
 );
 const LeftLayersContent = lazy(
   () => import('./LeftLayersContent')
-    .then(module => ({default: module.LeftLayersContent}))
+    .then(module => ({ default: module.LeftLayersContent }))
 );
 const RightPanel = lazy(() => import('pages/editor/right/RightPanel'));
 const EditorTutorials = lazy(() => import('pages/tutorials/editorTutorials'));
 const Bottom = lazy(() => import('./bottom/BottomPanel'));
 const CustomShortcutWrapper = lazy(
   () => import('pages/editor/editorHotKeys')
-    .then(module => ({default: module.CustomShortcutWrapper}))
+    .then(module => ({ default: module.CustomShortcutWrapper }))
 );
 const EditorGlobalHotKeys = lazy(
   () => import('pages/editor/editorHotKeys')
-    .then(module => ({default: module.EditorGlobalHotKeys}))
+    .then(module => ({ default: module.EditorGlobalHotKeys }))
 );
 const EditorHotKeys = lazy(
   () => import('pages/editor/editorHotKeys')
-    .then(module => ({default: module.EditorHotKeys}))
+    .then(module => ({ default: module.EditorHotKeys }))
 );
 const Body = lazy(
   () => import('pages/common/styledComponent')
-    .then(module => ({default: module.Body}))
+    .then(module => ({ default: module.Body }))
 );
 const EditorContainer = lazy(
   () => import('pages/common/styledComponent')
-    .then(module => ({default: module.EditorContainer}))
+    .then(module => ({ default: module.EditorContainer }))
 );
 const EditorContainerWithViewMode = lazy(
   () => import('pages/common/styledComponent')
-    .then(module => ({default: module.EditorContainerWithViewMode}))
+    .then(module => ({ default: module.EditorContainerWithViewMode }))
 );
 const Height100Div = lazy(
   () => import('pages/common/styledComponent')
-    .then(module => ({default: module.Height100Div}))
+    .then(module => ({ default: module.Height100Div }))
 );
 const LeftPanel = lazy(
   () => import('pages/common/styledComponent')
-    .then(module => ({default: module.LeftPanel}))
+    .then(module => ({ default: module.LeftPanel }))
 );
 const MiddlePanel = lazy(
   () => import('pages/common/styledComponent')
-    .then(module => ({default: module.MiddlePanel}))
+    .then(module => ({ default: module.MiddlePanel }))
 );
 const HelpDropdown = lazy(
   () => import('pages/common/help')
-    .then(module => ({default: module.HelpDropdown}))
+    .then(module => ({ default: module.HelpDropdown }))
 );
 const PreviewHeader = lazy(
   () => import('pages/common/previewHeader')
-    .then(module => ({default: module.PreviewHeader}))
+    .then(module => ({ default: module.PreviewHeader }))
 );
 
 const HookCompContainer = styled.div`
@@ -144,9 +144,8 @@ const HookCompContainer = styled.div`
 `;
 
 const ViewBody = styled.div<{ $hideBodyHeader?: boolean; $height?: number }>`
-  height: ${(props) => `calc(${
-    props.$height ? props.$height + "px" : "100vh"
-  } - env(safe-area-inset-bottom) -
+  height: ${(props) => `calc(${props.$height ? props.$height + "px" : "100vh"
+    } - env(safe-area-inset-bottom) -
       ${props.$hideBodyHeader ? "0px" : TopHeaderHeight}
   )`};
 `;
@@ -515,7 +514,7 @@ function EditorView(props: EditorViewProps) {
         </ViewBody>
       );
     }
-    
+
     return uiComp.getView();
   }, [
     showAppSnapshot,
@@ -530,10 +529,10 @@ function EditorView(props: EditorViewProps) {
     return (
       editorState.deviceType === "mobile" || editorState.deviceType === "tablet" ? (
         <DeviceWrapper
-            deviceType={editorState.deviceType}
-            deviceOrientation={editorState.deviceOrientation}
-          >
-            {uiComp.getView()}
+          deviceType={editorState.deviceType}
+          deviceOrientation={editorState.deviceOrientation}
+        >
+          {uiComp.getView()}
         </DeviceWrapper>
       ) : (
         <div>
@@ -593,41 +592,41 @@ function EditorView(props: EditorViewProps) {
   if (readOnly && !showAppSnapshot) {
     return (
       <CustomShortcutWrapper>
-                 <Helmet>
-         {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
-           {(() => {
-             const appId = application?.applicationId;
-             const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
-             const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
-             const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
-             const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
-             return [
-               manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
-               appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
-               appIcon512 && <link key="apple-touch-icon" rel="apple-touch-icon" href={appIcon512} />,
-               appIcon512 && <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={appIcon512} />,
-               appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
-               appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
-               <meta key="theme-color" name="theme-color" content={themeColor} />,
-             ];
-           })()}
-           {isLowCoderDomain || isLocalhost && [
-             // Adding Support for iframely to be able to embedd apps as iframes
-             application?.name ? ([
-               <meta key="iframely:title" property="iframely:title" content={application.name} />,
-               <meta key="iframely:description" property="iframely:description" content={application.description} />,
-             ]) : ([
-               <meta key="iframely:title" property="iframely:title" content="Lowcoder 3" />,
-               <meta key="iframely:description" property="iframely:description" content="Lowcoder | rapid App & VideoMeeting builder for everyone." />,
-             ]),
-             <link rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)"/>,
-             <link key="preconnect-googleapis" rel="preconnect" href="https://fonts.googleapis.com" />,
-             <link key="preconnect-gstatic" rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />,
-             <link key="font-ubuntu" href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet" />,
-             // adding Hubspot Support for Analytics
-             <script key="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/144574215.js" type="text/javascript" id="hs-script-loader"></script>
-           ]}
-         </Helmet>
+        <Helmet>
+          {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
+          {(() => {
+            const appId = application?.applicationId;
+            const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
+            const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
+            const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+            const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+            return [
+              manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
+              appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
+              appIcon512 && <link key="apple-touch-icon" rel="apple-touch-icon" href={appIcon512} />,
+              appIcon512 && <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={appIcon512} />,
+              appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
+              appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
+              <meta key="theme-color" name="theme-color" content={themeColor} />,
+            ];
+          })()}
+          {isLowCoderDomain || isLocalhost && [
+            // Adding Support for iframely to be able to embedd apps as iframes
+            application?.name ? ([
+              <meta key="iframely:title" property="iframely:title" content={application.name} />,
+              <meta key="iframely:description" property="iframely:description" content={application.description} />,
+            ]) : ([
+              <meta key="iframely:title" property="iframely:title" content="Lowcoder 3" />,
+              <meta key="iframely:description" property="iframely:description" content="Lowcoder | rapid App & VideoMeeting builder for everyone." />,
+            ]),
+            <link key="iframely" rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)" />,
+            <link key="preconnect-googleapis" rel="preconnect" href="https://fonts.googleapis.com" />,
+            <link key="preconnect-gstatic" rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />,
+            <link key="font-ubuntu" href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet" />,
+            // adding Hubspot Support for Analytics
+            <script key="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/144574215.js" type="text/javascript" id="hs-script-loader"></script>
+          ]}
+        </Helmet>
         <Suspense fallback={<EditorSkeletonView />}>
           {!hideBodyHeader && <PreviewHeader />}
           <EditorContainerWithViewMode>
@@ -642,7 +641,7 @@ function EditorView(props: EditorViewProps) {
       </CustomShortcutWrapper>
     );
   }
-  
+
   // history mode, display with the right panel, a little trick
   const showRight = panelStatus.right || showAppSnapshot;
 
@@ -658,48 +657,48 @@ function EditorView(props: EditorViewProps) {
 
   return (
     <>
-    <Helmet>
-      {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
-      {(() => {
-        const appId = application?.applicationId;
-        const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
-        const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
-        const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
-        const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
-        return [
-          manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
-          appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
-          appIcon512 && <link key="apple-touch-icon" rel="apple-touch-icon" href={appIcon512} />,
-          appIcon512 && <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={appIcon512} />,
-          appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
-          appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
-          <meta key="theme-color" name="theme-color" content={themeColor} />,
-        ];
-      })()}
-      {isLowCoderDomain || isLocalhost && [
-        // Adding Support for iframely to be able to embedd apps as iframes
-        application?.name ? ([
-          <meta key="iframely:title" property="iframely:title" content={application.name} />,
-          <meta key="iframely:description" property="iframely:description" content={application.description} />,
-        ]) : ([
-          <meta key="iframely:title" property="iframely:title" content="Lowcoder 3" />,
-          <meta key="iframely:description" property="iframely:description" content="Lowcoder | rapid App & VideoMeeting builder for everyone." />,
-        ]),
-        <link key="iframely" rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)" />,
-        <link key="preconnect-googleapis" rel="preconnect" href="https://fonts.googleapis.com" />,
-        <link key="preconnect-gstatic" rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />,
-        <link key="font-ubuntu" href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet" />,
-        // adding Clearbit Support for Analytics
-        <script key="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/144574215.js" type="text/javascript" id="hs-script-loader"></script>
-      ]}
-    </Helmet>
-    <Height100Div
-      onDragEnd={(e) => {
-        // log.debug("layout: onDragEnd. Height100Div");
-        editorState.setDragging(false);
-        draggingUtils.clearData();
-      } }
-    >
+      <Helmet>
+        {application && <title>{appSettingsComp?.children?.title?.getView?.() || application?.name}</title>}
+        {(() => {
+          const appId = application?.applicationId;
+          const appIcon512 = appId ? `/api/applications/${appId}/icons/512.png` : undefined;
+          const appIcon192 = appId ? `/api/applications/${appId}/icons/192.png` : undefined;
+          const manifestHref = appId ? `/api/applications/${appId}/manifest.json` : undefined;
+          const themeColor = brandingSettings?.config_set?.mainBrandingColor || '#b480de';
+          return [
+            manifestHref && <link key="app-manifest" rel="manifest" href={manifestHref} />,
+            appIcon192 && <link key="app-favicon" rel="icon" href={appIcon192} />,
+            appIcon512 && <link key="apple-touch-icon" rel="apple-touch-icon" href={appIcon512} />,
+            appIcon512 && <link key="apple-touch-startup-image" rel="apple-touch-startup-image" href={appIcon512} />,
+            appIcon512 && <meta key="og:image" property="og:image" content={appIcon512} />,
+            appIcon512 && <meta key="twitter:image" name="twitter:image" content={appIcon512} />,
+            <meta key="theme-color" name="theme-color" content={themeColor} />,
+          ];
+        })()}
+        {isLowCoderDomain || isLocalhost && [
+          // Adding Support for iframely to be able to embedd apps as iframes
+          application?.name ? ([
+            <meta key="iframely:title" property="iframely:title" content={application.name} />,
+            <meta key="iframely:description" property="iframely:description" content={application.description} />,
+          ]) : ([
+            <meta key="iframely:title" property="iframely:title" content="Lowcoder 3" />,
+            <meta key="iframely:description" property="iframely:description" content="Lowcoder | rapid App & VideoMeeting builder for everyone." />,
+          ]),
+          <link key="iframely" rel="iframely" type="text/html" href={window.location.href} media="(aspect-ratio: 1280/720)" />,
+          <link key="preconnect-googleapis" rel="preconnect" href="https://fonts.googleapis.com" />,
+          <link key="preconnect-gstatic" rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />,
+          <link key="font-ubuntu" href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet" />,
+          // adding Clearbit Support for Analytics
+          <script key="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/144574215.js" type="text/javascript" id="hs-script-loader"></script>
+        ]}
+      </Helmet>
+      <Height100Div
+        onDragEnd={(e) => {
+          // log.debug("layout: onDragEnd. Height100Div");
+          editorState.setDragging(false);
+          draggingUtils.clearData();
+        }}
+      >
         {isPublicApp
           ? <PreviewHeader />
           : (
@@ -755,7 +754,7 @@ function EditorView(props: EditorViewProps) {
               {panelStatus.left && editorModeStatus !== "layout" && (
                 <LeftPanel>
                   {menuKey === SiderKey.State && <LeftContent uiComp={uiComp} />}
-                  <AppSettingContext.Provider value={{settingType: menuKey as AppSettingType}}>
+                  <AppSettingContext.Provider value={{ settingType: menuKey as AppSettingType }}>
                     <>
                       {menuKey === SiderKey.Setting && (
                         <SettingsDiv>
@@ -799,7 +798,7 @@ function EditorView(props: EditorViewProps) {
                         <LeftPreloadIcon />
                         {trans("leftPanel.toolbarPreload")}
                       </PreloadDiv>
-                      
+
                       {props.preloadComp.getJSLibraryPropertyView()}
                     </>
                   )}
