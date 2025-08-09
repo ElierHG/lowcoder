@@ -3,6 +3,7 @@ package org.lowcoder.api.application;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.ReactiveRedisOperations;
 import org.lowcoder.api.framework.view.ResponseView;
 import org.lowcoder.domain.application.model.Application;
 import org.lowcoder.domain.application.service.ApplicationRecordService;
@@ -43,6 +44,7 @@ public class AppIconController {
 
     private final ApplicationService applicationService;
     private final ApplicationRecordService applicationRecordService;
+    private final ReactiveRedisOperations<String, String> reactiveRedisOperations;
 
     @GetMapping("/{applicationId}/icons")
     public Mono<ResponseView<Map<String, Object>>> getAvailableIconSizes(@PathVariable String applicationId) {
@@ -70,13 +72,40 @@ public class AppIconController {
                 .flatMap(tuple -> {
                     Application app = tuple.getT1();
                     String iconIdentifier = Optional.ofNullable(tuple.getT2()).orElse("");
-                    return Mono.fromCallable(() -> buildIconPng(iconIdentifier, app.getName(), size, parseColor(bg)))
-                               .onErrorResume(e -> {
-                                   log.warn("Failed to generate icon for app {}: {}", applicationId, e.getMessage());
-                                   return Mono.fromCallable(() -> buildPlaceholderPng(app.getName(), size, parseColor(bg)));
-                               });
+
+                    String cacheKey = buildCacheKey(applicationId, size, bg, iconIdentifier);
+
+                    return reactiveRedisOperations.opsForValue().get(cacheKey)
+                            .flatMap(encoded -> Mono.fromCallable(() -> Base64.getDecoder().decode(encoded)))
+                            .switchIfEmpty(
+                                    Mono.fromCallable(() -> buildIconPng(iconIdentifier, app.getName(), size, parseColor(bg)))
+                                            .onErrorResume(e -> {
+                                                log.warn("Failed to generate icon for app {}: {}", applicationId, e.getMessage());
+                                                return Mono.fromCallable(() -> buildPlaceholderPng(app.getName(), size, parseColor(bg)));
+                                            })
+                                            .flatMap(bytes -> reactiveRedisOperations.opsForValue()
+                                                    .set(cacheKey, Base64.getEncoder().encodeToString(bytes), java.time.Duration.ofHours(1))
+                                                    .onErrorResume(err -> {
+                                                        log.debug("Redis set failed for key {}: {}", cacheKey, err.toString());
+                                                        return Mono.just(false);
+                                                    })
+                                                    .thenReturn(bytes)
+                                            )
+                            );
                 })
-                .switchIfEmpty(Mono.fromCallable(() -> buildPlaceholderPng("Lowcoder", size, parseColor(bg))))
+                .switchIfEmpty(
+                        Mono.defer(() -> {
+                            String cacheKey = buildCacheKey(applicationId, size, bg, "");
+                            byte[] generated = buildPlaceholderPng("Lowcoder", size, parseColor(bg));
+                            return reactiveRedisOperations.opsForValue()
+                                    .set(cacheKey, Base64.getEncoder().encodeToString(generated), java.time.Duration.ofHours(1))
+                                    .onErrorResume(err -> {
+                                        log.debug("Redis set failed for key {}: {}", cacheKey, err.toString());
+                                        return Mono.just(false);
+                                    })
+                                    .thenReturn(generated);
+                        })
+                )
                 .flatMap(bytes -> response.writeWith(Mono.just(response.bufferFactory().wrap(bytes))))
                 .then();
     }
@@ -89,6 +118,12 @@ public class AppIconController {
             return buildPlaceholderPng(appName, size, bgColor);
         }
         return scaleToSquarePng(source, size, bgColor);
+    }
+
+    private static String buildCacheKey(String applicationId, int size, @Nullable String bg, @Nullable String iconIdentifier) {
+        String normBg = (bg == null || bg.isBlank()) ? "-" : bg.trim().toLowerCase(Locale.ROOT);
+        String iconHash = (iconIdentifier == null) ? "0" : Integer.toHexString(iconIdentifier.hashCode());
+        return "appicon:" + applicationId + '|' + size + '|' + normBg + '|' + iconHash;
     }
 
     private static BufferedImage tryLoadImage(String iconIdentifier) {

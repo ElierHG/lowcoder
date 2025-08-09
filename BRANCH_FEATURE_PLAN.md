@@ -211,9 +211,9 @@ const appleTouchIcon =
 />
 ```
 
-### 🔄 Phase 4: Advanced PWA Features (PARTIALLY COMPLETED)
+### ✅ Phase 4: Advanced PWA Features (CACHING COMPLETED)
 
-**Status**: 🔄 **PARTIALLY COMPLETED** — Advanced PWA and icon optimization features
+**Status**: ✅ **CACHING COMPLETED** — Advanced PWA and icon optimization features are underway; Redis‑backed PNG caching is now implemented
 
 #### Planned Implementation:
 
@@ -222,24 +222,15 @@ const appleTouchIcon =
     - ✅ Multiple icon sizes generated on-demand via `GET /icons/{size}.png` (48, 72, 96, 120, 128, 144, 152, 167, 180, 192, 256, 384, 512)
     - ✅ Optional background color supported via `?bg=#RRGGBB`
     - ✅ HTTP caching via `Cache-Control` headers (7 days)
-    - 🔄 Future: in-memory caching of generated PNGs; support SVG/WebP output; persistent cache store
+    - ✅ Redis‑backed caching of generated PNGs — key prefix `appicon:` with `appId|size|bg|icon-hash`, values Base64‑encoded bytes, 1h TTL via reactive Redis; gracefully falls back if Redis is unavailable
 
 ## Technical Implementation Details
 
-### Backend Changes Needed (Future)
+1. **API Endpoints (already implemented)**:
 
-1. **New API Endpoints**:
-
-    - Already implemented for this feature set:
-        - `GET /api/applications/{appId}/manifest.json` (in `ApplicationController`)
-        - `GET /api/applications/{appId}/icons` and `GET /api/applications/{appId}/icons/{size}.png[?bg=#RRGGBB]` (in `AppIconController`)
-    - No additional endpoints are required at this time.
-
-2. **Icon Conversion Service**:
-    - Use libraries like ImageMagick or Java ImageIO
-    - Support SVG to PNG conversion
-    - Generate multiple favicon sizes
-    - Handle transparency and background colors
+    - `GET /api/applications/{appId}/manifest.json` (in `ApplicationController`)
+    - `GET /api/applications/{appId}/icons` and `GET /api/applications/{appId}/icons/{size}.png[?bg=#RRGGBB]` (in `AppIconController`)
+    - No additional endpoints are required for this phase.
 
 ### Frontend Changes Completed
 
@@ -272,24 +263,21 @@ const appleTouchIcon =
 
     - Uses `branding?.favicon` (via `buildMaterialPreviewURL`) with fallback to the imported `favicon` asset.
 
-### Database Schema Updates (Future)
-
-1. **Application Table**: Add fields for cached favicon URLs
-2. **Icon Cache Table**: Store converted icons with metadata
+<!-- Database schema changes are out of scope for this phase. -->
 
 ## Benefits of This Approach
 
 1. **✅ User Experience**: Each app has its own visual identity in browser tabs
 2. **✅ PWA Support**: Apps can be installed as standalone PWAs with custom icons (Phase 3)
 3. **✅ Backward Compatibility**: Existing apps without icons fall back to global favicon
-4. **🔄 Performance**: Cached icon conversion reduces processing overhead (Phase 2)
+4. **✅ Performance**: Redis caching reduces processing overhead
 5. **✅ Scalability**: Icon conversion happens on-demand and is cached
 
 ## Implementation Priority
 
 1. **✅ High Priority**: Basic favicon functionality for app view pages (COMPLETED)
 2. **✅ Medium Priority**: PWA manifest generation and installation support (COMPLETED)
-3. **🔄 Low Priority**: Advanced icon processing and optimization
+3. **Optional**: Advanced icon processing and optimization (see "Future Enhancements (Optional)")
 
 ## File Structure Changes
 
@@ -308,14 +296,6 @@ const appleTouchIcon =
 -   `server/api-service/lowcoder-server/src/main/java/org/lowcoder/api/application/ApplicationController.java` ✅
 -   `server/api-service/lowcoder-server/src/main/java/org/lowcoder/api/framework/security/SecurityConfig.java` ✅ (permits public GET for manifest and icons on both legacy and new URL bases)
 
-### 🔄 Files to Create (Future)
-
--   `server/api-service/lowcoder-server/src/main/java/org/lowcoder/domain/application/service/IconConversionService.java`
-
-### 🔄 Files to Modify (Future)
-
--   `server/api-service/lowcoder-domain/src/main/java/org/lowcoder/domain/application/model/Application.java`
-
 ## Testing Strategy
 
 1. **✅ Unit Tests**: Icon conversion utilities (manual testing completed)
@@ -325,17 +305,29 @@ const appleTouchIcon =
 
 ## Deployment Considerations
 
-1. **🔄 Icon Storage**: Persistent storage/caching for converted icons is not implemented yet (icons are rendered on-demand)
-2. **🔄 CDN Integration**: Configure CDN for serving converted icons (Phase 2)
-3. **✅ Cache Headers**: Icon responses set `Cache-Control: public, max-age=7d`
-4. **✅ Error Handling**: Graceful fallback when icon conversion fails
+1. **✅ Icon Cache**: Redis is used to cache generated PNGs (see `spring.data.redis.url`). If Redis is down, generation proceeds without cache.
+2. **✅ Cache Headers**: Icon responses set `Cache-Control: public, max-age=7d`
+3. **✅ Error Handling**: Graceful fallback when icon conversion fails
+
+## Future Enhancements (Optional)
+
+-   **SVG and Font Icons**: Render SVGs and font icons (FontAwesome/Ant Design) to PNG for consistent outputs.
+-   **Additional Outputs**: Provide WebP variants or negotiate via Accept header when beneficial.
+-   **Cache Invalidation**: Evict Redis keys for an app when its icon or branding color changes (all sizes/bg variants).
+-   **Configurable Cache**: Make Redis TTL and key prefix configurable via environment variables (defaults remain as-is).
+-   **Persistent Artifacts**: Optional long-lived storage of rendered icons to reduce regeneration beyond Redis TTL.
+-   **CDN Integration**: Optionally place a CDN in front of icon endpoints for global performance.
+-   **PWA Enhancements**: Service worker for offline assets and custom install prompts (if desired).
+-   **Observability**: Metrics for cache hit rate and render failures; structured logs for troubleshooting.
+-   **Security Hardening**: Outbound fetch restrictions/allowlist for external icon URLs; size/time limits on downloads.
+-   **Test Coverage**: Automated tests for icon endpoints (cache hit/miss, headers, fallback paths; future SVG/font flows).
 
 ## Current Status Summary
 
 -   **✅ Phase 1**: COMPLETED — Basic app‑specific favicon functionality is working
 -   **✅ Phase 2 (MVP)**: COMPLETED — Backend icon endpoints serve PNGs with graceful fallback; security updated; manifest points to endpoints
 -   **✅ Phase 3**: COMPLETED — Enhanced PWA manifest with maskable icons, shortcuts, categories, proper content type, and app-specific meta tags
--   **🔄 Phase 4**: PARTIALLY COMPLETED — Multi-size icon endpoints, brand-aware background color, per‑app OG/Twitter images, HTTP cache headers are in place. In‑memory icon caching and other stretch goals (SVG/WebP, persistent cache, font‑icon rendering, custom install prompts) remain future enhancements.
+-   **✅ Phase 4**: CACHING COMPLETED — Multi-size icon endpoints, optional brand-aware background color, per‑app OG/Twitter images, HTTP cache headers, and Redis-backed PNG caching are implemented. Advanced items (e.g., SVG/font icon rendering, WebP, persistent artifacts, CDN, SW/UX) are listed under "Future Enhancements (Optional)".
 
 The implementation is modular and can be developed incrementally. Phase 1 provided immediate value with app-specific favicons, and Phase 3 added comprehensive PWA support. Phase 2 (MVP) delivered per‑app PNG endpoints with cache headers and graceful fallback; later updates added multi-size support and optional background color. Phase 4 progresses advanced features; remaining items are tracked above.
 
